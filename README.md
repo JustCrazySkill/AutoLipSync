@@ -170,4 +170,4 @@ Go to the Releases page for the latest builds:
 
 ## Community
 
-Questions, bug reports, and feedback: [YOUR DISCORD INVITE LINK]
+Questions, bug reports, and feedback: [[[Discord link](https://discord.gg/m75dmfyHKS)]]
