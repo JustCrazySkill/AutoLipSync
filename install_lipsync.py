@@ -286,12 +286,12 @@ def step_install_torch(cuda_ver):
         info(f"Index URL: {index_url}")
         info("Установка torch + torchaudio (GPU)... [5–15 минут, зависит от скорости]")
         cmd = [VENV_PYTHON, "-m", "pip", "install",
-               "torch", "torchaudio",
+               "torch==2.1.2", "torchaudio==2.1.2",
                "--index-url", index_url, "--quiet"]
     else:
         info("Установка torch + torchaudio (CPU)... [3–8 минут]")
         cmd = [VENV_PYTHON, "-m", "pip", "install",
-               "torch", "torchaudio", "--quiet"]
+               "torch==2.1.2", "torchaudio==2.1.2", "--quiet"]
 
     result = subprocess.run(cmd, text=True)
     if result.returncode == 0:
@@ -352,6 +352,80 @@ def step_install_whisperx():
                     err(f"Вручную: {VENV_PIP} install git+https://github.com/m-bain/whisperX.git")
             else:
                 err(f"{label} — НЕУДАЧА. Вручную: {VENV_PIP} install {pkg}")
+
+
+# ─────────────────────────────────────────────────────────────
+# ШАГ 5b — Патч совместимости torchaudio / pyannote.audio
+# ─────────────────────────────────────────────────────────────
+def step_patch_torchaudio_compat():
+    """
+    torchaudio 2.2+ удалил list_audio_backends().
+    pyannote.audio (используется whisperX) вызывает её при импорте → краш.
+    Если функция отсутствует — патчим pyannote/audio/core/io.py в venv.
+    """
+    check_script = (
+        "import torchaudio; "
+        "exit(0 if hasattr(torchaudio, 'list_audio_backends') else 1)"
+    )
+    r = subprocess.run([VENV_PYTHON, "-c", check_script], capture_output=True)
+    if r.returncode == 0:
+        ok("torchaudio.list_audio_backends — OK (патч не нужен)")
+        return
+
+    warn("torchaudio 2.2+ обнаружен: list_audio_backends отсутствует.")
+    info("Патчим pyannote/audio/core/io.py в venv...")
+
+    patch_script = r"""
+import os, sys, glob
+
+venv_site = None
+for p in sys.path:
+    if "site-packages" in p and os.path.isdir(p):
+        venv_site = p
+        break
+
+if not venv_site:
+    print("site-packages не найден", file=sys.stderr)
+    sys.exit(1)
+
+io_path = os.path.join(venv_site, "pyannote", "audio", "core", "io.py")
+if not os.path.exists(io_path):
+    print(f"io.py не найден: {io_path}", file=sys.stderr)
+    sys.exit(2)
+
+with open(io_path, "r", encoding="utf-8") as f:
+    src = f.read()
+
+GUARD = "# [compat-patch] list_audio_backends stub"
+if GUARD in src:
+    print("Уже пропатчен.")
+    sys.exit(0)
+
+STUB = (
+    "\n" + GUARD + "\n"
+    "import torchaudio as _ta_compat\n"
+    "if not hasattr(_ta_compat, 'list_audio_backends'):\n"
+    "    _ta_compat.list_audio_backends = lambda: []\n"
+)
+
+# Вставляем после последнего import-блока (перед первым class/def)
+import re
+m = re.search(r'^(class |def )', src, re.MULTILINE)
+insert_at = m.start() if m else len(src)
+patched = src[:insert_at] + STUB + "\n" + src[insert_at:]
+
+with open(io_path, "w", encoding="utf-8") as f:
+    f.write(patched)
+
+print(f"Успешно пропатчен: {io_path}")
+"""
+    r2 = subprocess.run([VENV_PYTHON, "-c", patch_script],
+                        capture_output=True, text=True)
+    if r2.returncode == 0:
+        ok(f"Патч применён: {r2.stdout.strip()}")
+    else:
+        warn(f"Автопатч не удался: {r2.stderr.strip()[:120]}")
+        warn("Это не критично — lipsync_v5_1.py применяет патч сам при запуске.")
 
 
 # ─────────────────────────────────────────────────────────────
@@ -462,6 +536,7 @@ def main():
     cuda_ver = step_detect_gpu()
     step_install_torch(cuda_ver)
     step_install_whisperx()
+    step_patch_torchaudio_compat()
     all_ok = step_final()
 
     elapsed = time.time() - t_start
