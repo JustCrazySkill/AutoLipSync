@@ -18,7 +18,7 @@ Consists of two parts: a Python audio analyzer and a Roblox Studio plugin.
 
 ## Parts
 
-### Analyzer (Lipsync4.py / Lipsync4.exe)
+### Analyzer (lipsync\_v5\_1.py / LipSync\_v5.1.exe)
 
 A desktop application with a GUI. Powered by WhisperX with forced phoneme alignment,
 which gives precise per-character timestamps instead of estimated ones.
@@ -34,7 +34,7 @@ based on RMS amplitude at that timestamp.
 
 Output: a JSON file used directly by the plugin.
 
-### Plugin (AutoLipSync_v4.1.lua)
+### Plugin (AutoLipSync\_v4.1.lua)
 
 A Roblox Studio plugin for Moon Animator 2.
 Takes the JSON from the analyzer and generates Texture keyframes automatically.
@@ -42,8 +42,8 @@ Takes the JSON from the analyzer and generates Texture keyframes automatically.
 Supported visemes: CLOSED, A, E, I, O, U, M, F, S, L, T
 
 Two modes:
-- Simple -- one texture per viseme regardless of volume
-- Volume -- separate textures for quiet, normal, and loud per viseme
+- Simple — one texture per viseme regardless of volume
+- Volume — separate textures for quiet, normal, and loud per viseme
 
 Mode is selected automatically based on your config.
 
@@ -53,16 +53,9 @@ Mode is selected automatically based on your config.
 
 ### Analyzer
 - Python 3.9 or newer
-- whisperx
-- torch
-- torchaudio
-- librosa
-- FFmpeg (only required for video input) -- https://ffmpeg.org/download.html
+- FFmpeg (only required for video input) — https://ffmpeg.org/download.html
 
-Install dependencies:
-```
-pip install whisperx torch torchaudio librosa
-```
+All Python dependencies (whisperx, torch, torchaudio, librosa, etc.) are installed automatically into a local virtual environment by the installer. Nothing is changed system-wide.
 
 ### Plugin
 - Roblox Studio with plugin execution enabled
@@ -73,13 +66,17 @@ pip install whisperx torch torchaudio librosa
 ## Installation
 
 ### Analyzer (Python version)
-1. Install Python from https://python.org
-2. Install dependencies with the command above
-3. Run: `python Lipsync4.py`
+1. Install Python 3.9+ from https://python.org
+   - During installation, check **"Add Python to PATH"**
+2. Place all files from the release in the same folder
+3. Run `install_lipsync.bat` — it will find your Python, create a local `venv`, and install all dependencies automatically
+4. Once the installer finishes, launch the app with `launcher.py` (or double-click it)
+
+> All dependencies are installed into a `venv` folder next to the scripts. Nothing is modified in your system Python.
 
 ### Analyzer (compiled .exe)
-1. Download `Lipsync4.exe` from the Releases page
-2. Run it directly -- no Python installation needed
+1. Download `LipSync_v5.1.exe` from the Releases page
+2. Run it directly — no Python installation needed
 
 ### Plugin
 1. Download `AutoLipSync_v4.1.lua` from the Releases page
@@ -93,19 +90,20 @@ pip install whisperx torch torchaudio librosa
 
 ## Usage
 
-1. Open the analyzer, select your audio or video file
-2. Set FPS to match your Moon Animator 2 animation (default: 24)
-3. Choose a Whisper model size:
-   - `base` -- fast, good for clear recordings
-   - `small` or `medium` -- more accurate, slower
-4. Click Analyze and wait for the JSON file to be saved
-5. Open Roblox Studio and click the LipSync v4.1 button in the Plugins toolbar
-6. Paste the JSON content into the JSON field and click Load JSON
-7. Select your face folder in Explorer:
+1. Open the analyzer via `launcher.py` (Python version) or `LipSync_v5.1.exe`
+2. Select your audio or video file
+3. Set FPS to match your Moon Animator 2 animation (default: 24)
+4. Choose a Whisper model size:
+   - `base` — fast, good for clear recordings
+   - `small` or `medium` — more accurate, slower
+5. Click Analyze and wait for the JSON file to be saved
+6. Open Roblox Studio and click the LipSync v4.1 button in the Plugins toolbar
+7. Paste the JSON content into the JSON field and click Load JSON
+8. Select your face folder in Explorer:
    `ServerStorage/MoonAnimator2Saves/[AnimName]/[N]`
-8. Fill in the texture config with your asset IDs and click Apply Config
-9. Click APPLY
-10. Open Moon Animator 2 -> File -> Open to load the result
+9. Fill in the texture config with your asset IDs and click Apply Config
+10. Click APPLY
+11. Open Moon Animator 2 → File → Open to load the result
 
 ---
 
@@ -163,11 +161,20 @@ If quiet/loud keywords are present the plugin uses Volume mode automatically.
 ## Downloads
 
 Go to the Releases page for the latest builds:
-- `AutoLipSync_v4.1.lua` -- Roblox Studio plugin
-- `Lipsync4.exe` -- compiled analyzer for Windows (no Python needed)
+- `AutoLipSync_v4.1.lua` — Roblox Studio plugin
+- `LipSync_v5.1.exe` — compiled analyzer for Windows (no Python needed)
 
 ---
 
 ## Community
 
-Questions, bug reports, and feedback: [[[Discord link](https://discord.gg/m75dmfyHKS)]]
+Questions, bug reports, and feedback: [Discord](https://discord.gg/m75dmfyHKS)
+
+---
+
+The main changes from the old version:
+
+- **Requirements** — removed the manual `pip install` command; the installer handles everything
+- **Installation (Python version)** — replaced the old 3-step manual setup with the new `install_lipsync.bat` → `launcher.py` flow, plus a note that deps go into a local `venv`
+- **Usage** — updated step 1 to mention `launcher.py` alongside the `.exe`
+- **File names** — updated from `Lipsync4.py` / `Lipsync4.exe` to `lipsync_v5_1.py` / `LipSync_v5.1.exe` throughout
